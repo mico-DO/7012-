@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RM撕名牌单挑胜率模型</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui, sans-serif;}
+body{
+    background:#ffffff;
+    color:#222222;
+    padding:16px;
+    max-width:650px;
+    margin:0 auto;
+}
+.card{
+    background:#f6f7f9;
+    padding:20px;
+    border-radius:12px;
+    border:1px solid #ddd;
+}
+h1{
+    text-align:center;
+    color:#222;
+    font-size:20px;
+    margin-bottom:6px;
+}
+.desc{
+    text-align:center;
+    font-size:12px;
+    color:#555;
+    margin-bottom:20px;
+}
+.form-item{
+    margin-bottom:14px;
+}
+label{
+    display:block;
+    margin-bottom:6px;
+    color:#333;
+    font-size:15px;
+}
+input,select{
+    width:100%;
+    padding:11px;
+    border-radius:8px;
+    border:1px solid #aaa;
+    font-size:16px;
+    background:#fff;
+    color:#222;
+    outline:none;
+}
+input[type="range"]{
+    padding:0;
+}
+.row2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+}
+.slide-info{
+    display:flex;
+    justify-content:space-between;
+    font-size:13px;
+    color:#555;
+    margin-top:4px;
+}
+button{
+    width:100%;
+    padding:13px;
+    border:none;
+    border-radius:8px;
+    background:#ff9922;
+    color:#111;
+    font-size:17px;
+    font-weight:bold;
+    cursor:pointer;
+    margin-top:8px;
+}
+button:active{
+    background:#dd7700;
+}
+.result{
+    margin-top:20px;
+    padding:16px;
+    border-radius:8px;
+    background:#fff3dd;
+    font-size:20px;
+    text-align:center;
+    font-weight:bold;
+    color:#c26000;
+}
+.result-sub{
+    margin-top:8px;
+    font-size:14px;
+    color:#555;
+}
+</style>
+</head>
+<body>
+<div class="card">
+<h1>RunningMan 撕名牌单挑胜率</h1>
+<div class="desc">仅支持 2010–2016｜成员：刘在石/李光洙/金钟国/gary/HaHa/宋智孝/池石镇</div>
+
+<div class="form-item">
+<label>选手A</label>
+<select id="p1">
+<option value="刘在石">刘在石</option>
+<option value="李光洙">李光洙</option>
+<option value="金钟国">金钟国</option>
+<option value="gary">gary</option>
+<option value="HaHa">HaHa</option>
+<option value="宋智孝">宋智孝</option>
+<option value="池石镇">池石镇</option>
+</select>
+</div>
+<div class="form-item">
+<label>选手B</label>
+<select id="p2">
+<option value="刘在石">刘在石</option>
+<option value="李光洙">李光洙</option>
+<option value="金钟国">金钟国</option>
+<option value="gary">gary</option>
+<option value="HaHa">HaHa</option>
+<option value="宋智孝">宋智孝</option>
+<option value="池石镇">池石镇</option>
+</select>
+</div>
+<div class="form-item">
+<label>年份（2010~2016）</label>
+<input type="number" id="year" min="2010" max="2016" value="2013">
+</div>
+
+<div class="form-item">
+<label>基础分权重：<span id="weightText">0.60</span></label>
+<input type="range" id="baseWeightSlider" min="0" max="1" step="0.01" value="0.6">
+<div class="slide-info">
+    <span>完全用属性 0</span>
+    <span>完全用原作基础分 1</span>
+</div>
+</div>
+
+<div class="row2">
+<div class="form-item">
+<label>A力量(0-100)</label>
+<input type="number" id="aPower" min="0" max="100" value="60">
+</div>
+<div class="form-item">
+<label>B力量(0-100)</label>
+<input type="number" id="bPower" min="0" max="100" value="60">
+</div>
+</div>
+<div class="row2">
+<div class="form-item">
+<label>A静态天赋(0-100)</label>
+<input type="number" id="aStatic" min="0" max="100" value="50">
+</div>
+<div class="form-item">
+<label>B静态天赋(0-100)</label>
+<input type="number" id="bStatic" min="0" max="100" value="50">
+</div>
+</div>
+<div class="row2">
+<div class="form-item">
+<label>A动态天赋(0-100)</label>
+<input type="number" id="aDynamic" min="0" max="100" value="65">
+</div>
+<div class="form-item">
+<label>B动态天赋(0-100)</label>
+<input type="number" id="bDynamic" min="0" max="100" value="65">
+</div>
+</div>
+<div class="row2">
+<div class="form-item">
+<label>A技巧(0-100)</label>
+<input type="number" id="aSkill" min="0" max="100" value="60">
+</div>
+<div class="form-item">
+<label>B技巧(0-100)</label>
+<input type="number" id="bSkill" min="0" max="100" value="60">
+</div>
+</div>
+
+<button onclick="calc()">计算单挑胜率</button>
+<div class="result" id="resBox"></div>
+<div class="result-sub" id="subBox"></div>
+</div>
+
+<script>
+const slider = document.getElementById("baseWeightSlider");
+const weightText = document.getElementById("weightText");
+
+slider.oninput = function(){
+    weightText.innerText = Number(this.value).toFixed(2);
+    calc();
+};
+
+function getBase(name, y){
+    if(name==="刘在石"){
+        return y===2016 ? 750 : 800;
+    }
+    if(name==="李光洙"){
+        if(y>=2010 && y<=2012) return 700;
+        if(y===2013 || y===2014) return 770;
+        if(y===2015 || y===2016) return 850;
+    }
+    if(name==="金钟国") return 1000;
+    if(name==="gary"){
+        return (y>=2010 && y<=2014) ? 770 :750;
+    }
+    if(name==="HaHa") return 600;
+    if(name==="宋智孝") return 300;
+    if(name==="池石镇") return 500;
+    return 500;
+}
+function calcScore(base, power, staticT, dynamic, skill, wBase){
+    let attr = power*0.2 + dynamic*0.1 + skill*0.08 + staticT*0.02;
+    let attrScore = attr * 10;
+    let total = base * wBase + attrScore * (1 - wBase);
+    return total;
+}
+function eloWin(sA, sB){
+    return 1/(1+Math.pow(10, (sB-sA)/400));
+}
+function calc(){
+    const p1 = document.getElementById("p1").value;
+    const p2 = document.getElementById("p2").value;
+    const y = Number(document.getElementById("year").value);
+    const wBase = Number(slider.value);
+
+    if(p1 === p2){
+        document.getElementById("resBox").innerText = "错误：两个人不能是同一个人！";
+        document.getElementById("subBox").innerText = "";
+        return;
+    }
+    if(y<2010||y>2016){
+        document.getElementById("resBox").innerText = "年份只能是2010–2016";
+        document.getElementById("subBox").innerText = "";
+        return;
+    }
+    const aPower = Number(document.getElementById("aPower").value);
+    const aStatic = Number(document.getElementById("aStatic").value);
+    const aDynamic = Number(document.getElementById("aDynamic").value);
+    const aSkill = Number(document.getElementById("aSkill").value);
+
+    const bPower = Number(document.getElementById("bPower").value);
+    const bStatic = Number(document.getElementById("bStatic").value);
+    const bDynamic = Number(document.getElementById("bDynamic").value);
+    const bSkill = Number(document.getElementById("bSkill").value);
+
+    const baseA = getBase(p1,y);
+    const baseB = getBase(p2,y);
+    const sA = calcScore(baseA, aPower, aStatic, aDynamic, aSkill, wBase);
+    const sB = calcScore(baseB, bPower, bStatic, bDynamic, bSkill, wBase);
+    const pA = eloWin(sA,sB);
+    const pB = 1-pA;
+    document.getElementById("resBox").innerText = `${p1}胜率：${(pA*100).toFixed(2)}%｜${p2}胜率：${(pB*100).toFixed(2)}%`;
+    document.getElementById("subBox").innerText = `基础分权重：${(wBase*100).toFixed(0)}%｜${p1}总分：${sA.toFixed(1)}（基础${baseA}）｜${p2}总分：${sB.toFixed(1)}（基础${baseB}）`;
+}
+calc();
+</script>
+</body>
+</html>
